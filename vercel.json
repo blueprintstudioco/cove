@@ -1,4 +1,6 @@
 {
+  "buildCommand": "echo 'skip build'",
+  "installCommand": "npm install hono @hono/node-server postgres nanoid",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index.js" }
   ]
