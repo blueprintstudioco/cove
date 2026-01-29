@@ -1,0 +1,24 @@
+{
+  "name": "cove",
+  "version": "0.1.0",
+  "description": "Agent-mediated human connection",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "db:init": "psql -d cove -f scripts/init-db.sql",
+    "db:create": "createdb cove",
+    "db:reset": "dropdb cove --if-exists && createdb cove && bun run db:init"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.9",
+    "hono": "^4.11.7",
+    "nanoid": "^5.1.6",
+    "postgres": "^3.4.8"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.8",
+    "typescript": "^5.9.3"
+  }
+}
