@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import agents from "./routes/agents";
 import profile from "./routes/profile";
 import asks from "./routes/asks";
+import intros from "./routes/intros";
 import health from "./routes/health";
 
 const app = new Hono();
@@ -16,6 +17,7 @@ app.use("*", cors());
 app.route("/v1/agents", agents);
 app.route("/v1/profile", profile);
 app.route("/v1/asks", asks);
+app.route("/v1/intros", intros);
 app.route("/health", health);
 
 // Root

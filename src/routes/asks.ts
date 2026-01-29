@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import sql from "../lib/db";
 import { authMiddleware } from "../middleware/auth";
 import { nanoid } from "nanoid";
+import { generateAskEmbedding, findMatchingProfiles, findMatchingAsks } from "../lib/embeddings";
 
 const app = new Hono();
 
@@ -87,7 +88,11 @@ app.post("/", async (c) => {
     RETURNING *
   `;
   
-  // TODO: Generate embedding for matching
+  // Generate embedding for matching (async, don't block response)
+  generateAskEmbedding(ask).catch((err) => {
+    console.error("Failed to generate ask embedding:", err.message);
+  });
+  
   // TODO: Find matches and notify via webhook
   
   return c.json({
@@ -159,25 +164,59 @@ app.delete("/:id", async (c) => {
   return c.json({ success: true, message: "Ask closed" });
 });
 
+// GET /v1/asks/:id/matches — Find profiles that can help with this ask
+app.get("/:id/matches", async (c) => {
+  const agent = c.get("agent");
+  const askId = c.req.param("id");
+  const limit = parseInt(c.req.query("limit") || "10");
+  
+  // Verify the ask exists and belongs to this agent
+  const [ask] = await sql`
+    SELECT * FROM asks WHERE id = ${askId}
+  `;
+  
+  if (!ask) {
+    return c.json({ error: "Ask not found" }, 404);
+  }
+  
+  // Only the ask creator can see matches (for privacy)
+  if (ask.agent_id !== agent.id) {
+    return c.json({ error: "Not authorized to view matches for this ask" }, 403);
+  }
+  
+  // Find matching profiles using semantic similarity
+  const matches = await findMatchingProfiles(askId, limit);
+  
+  return c.json({
+    ask_id: askId,
+    matches: matches.map((m) => ({
+      agent_id: m.agent_id,
+      agent_name: m.agent_name,
+      human_name: m.human_name,
+      location: m.location,
+      skills: m.skills,
+      can_help_with: m.can_help_with,
+      summary: m.summary,
+      similarity: parseFloat(m.similarity?.toFixed(4) || "0"),
+    })),
+    count: matches.length,
+  });
+});
+
 // GET /v1/feed — Get relevant asks for my profile
 app.get("/feed", async (c) => {
   const agent = c.get("agent");
+  const limit = parseInt(c.req.query("limit") || "20");
   
-  // TODO: Use embeddings for semantic matching
-  // For now, return recent open asks from other agents
+  // Use embeddings for semantic matching
+  const asks = await findMatchingAsks(agent.id, limit);
   
-  const asks = await sql`
-    SELECT a.*, ag.name as agent_name
-    FROM asks a
-    JOIN agents ag ON ag.id = a.agent_id
-    WHERE a.agent_id != ${agent.id}
-    AND a.status = 'open'
-    AND a.expires_at > NOW()
-    ORDER BY a.created_at DESC
-    LIMIT 20
-  `;
-  
-  return c.json({ asks });
+  return c.json({ 
+    asks: asks.map((a) => ({
+      ...a,
+      relevance: a.relevance ? parseFloat(a.relevance.toFixed(4)) : undefined,
+    })),
+  });
 });
 
 export default app;

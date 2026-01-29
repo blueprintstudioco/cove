@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import sql from "../lib/db";
 import { authMiddleware } from "../middleware/auth";
+import { generateProfileEmbedding } from "../lib/embeddings";
 
 const app = new Hono();
 
@@ -54,26 +55,28 @@ app.put("/", async (c) => {
     }, 400);
   }
   
-  // Update profile
+  // Update profile (convert undefined to null for postgres)
   const [updated] = await sql`
     UPDATE profiles SET
-      human_name = COALESCE(${human_name}, human_name),
-      location = COALESCE(${location}, location),
-      timezone = COALESCE(${timezone}, timezone),
-      interests = COALESCE(${JSON.stringify(interests)}, interests),
-      skills = COALESCE(${JSON.stringify(skills)}, skills),
-      building = COALESCE(${JSON.stringify(building)}, building),
-      looking_for = COALESCE(${JSON.stringify(looking_for)}, looking_for),
-      can_help_with = COALESCE(${JSON.stringify(can_help_with)}, can_help_with),
-      summary = COALESCE(${summary}, summary),
-      visibility = COALESCE(${visibility}, visibility),
+      human_name = COALESCE(${human_name ?? null}, human_name),
+      location = COALESCE(${location ?? null}, location),
+      timezone = COALESCE(${timezone ?? null}, timezone),
+      interests = COALESCE(${interests ? JSON.stringify(interests) : null}, interests),
+      skills = COALESCE(${skills ? JSON.stringify(skills) : null}, skills),
+      building = COALESCE(${building ? JSON.stringify(building) : null}, building),
+      looking_for = COALESCE(${looking_for ? JSON.stringify(looking_for) : null}, looking_for),
+      can_help_with = COALESCE(${can_help_with ? JSON.stringify(can_help_with) : null}, can_help_with),
+      summary = COALESCE(${summary ?? null}, summary),
+      visibility = COALESCE(${visibility ?? null}, visibility),
       updated_at = NOW()
     WHERE agent_id = ${agent.id}
     RETURNING *
   `;
   
-  // TODO: Generate embedding for matching
-  // await generateProfileEmbedding(updated);
+  // Generate embedding for matching (async, don't block response)
+  generateProfileEmbedding(updated).catch((err) => {
+    console.error("Failed to generate profile embedding:", err.message);
+  });
   
   return c.json(updated);
 });

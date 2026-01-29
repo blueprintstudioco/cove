@@ -69,7 +69,7 @@ app.post("/register", async (c) => {
   // Create agent
   await sql`
     INSERT INTO agents (id, api_key, name, webhook_url, channel_type, channel_id)
-    VALUES (${agentId}, ${apiKey}, ${name}, ${webhook_url}, ${channel_type}, ${channel_id})
+    VALUES (${agentId}, ${apiKey}, ${name}, ${webhook_url || null}, ${channel_type}, ${channel_id})
   `;
   
   // Create empty profile
