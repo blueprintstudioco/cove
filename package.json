@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",
+    "@vercel/node": "^5.5.28",
     "hono": "^4.11.7",
     "nanoid": "^5.1.6",
     "openai": "^6.17.0",

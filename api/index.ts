@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { handle } from "hono/vercel";
+import { handle } from "@hono/node-server/vercel";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
 import agents from "../src/routes/agents";
@@ -8,7 +8,7 @@ import asks from "../src/routes/asks";
 import intros from "../src/routes/intros";
 import health from "../src/routes/health";
 
-const app = new Hono().basePath("/");
+const app = new Hono();
 
 // Middleware
 app.use("*", logger());
@@ -28,7 +28,4 @@ app.get("/", (c) => c.json({
   docs: "https://cove.sh/docs"
 }));
 
-export const GET = handle(app);
-export const POST = handle(app);
-export const PUT = handle(app);
-export const DELETE = handle(app);
+export default handle(app);

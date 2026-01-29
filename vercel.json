@@ -1,8 +1,9 @@
 {
-  "buildCommand": "bun install",
-  "installCommand": "npm i -g bun && bun install",
-  "framework": null,
-  "outputDirectory": ".",
+  "functions": {
+    "api/index.ts": {
+      "runtime": "@vercel/node@3.0.0"
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index" }
   ]
