@@ -1,10 +1,8 @@
-// Cove API - Single file for Vercel serverless
-// All routes bundled to avoid module resolution issues
-
-const { Hono } = require("hono");
-const { handle } = require("@hono/node-server/vercel");
-const postgres = require("postgres");
-const { nanoid } = require("nanoid");
+// Cove API - Single file for Vercel serverless (ES Module)
+import { Hono } from "hono";
+import { handle } from "@hono/node-server/vercel";
+import postgres from "postgres";
+import { nanoid } from "nanoid";
 
 // Database
 const sql = postgres(process.env.DATABASE_URL, {
@@ -50,7 +48,7 @@ app.get("/health", async (c) => {
     await sql`SELECT 1`;
     return c.json({ status: "ok", db: "connected" });
   } catch (e) {
-    return c.json({ status: "error", db: "disconnected" }, 503);
+    return c.json({ status: "error", db: "disconnected", error: e.message }, 503);
   }
 });
 
@@ -138,4 +136,4 @@ app.get("/v1/feed", auth, async (c) => {
   return c.json({ asks });
 });
 
-module.exports = handle(app);
+export default handle(app);
