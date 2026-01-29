@@ -1,0 +1,9 @@
+{
+  "buildCommand": "bun install",
+  "installCommand": "npm i -g bun && bun install",
+  "framework": null,
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
+  ]
+}
