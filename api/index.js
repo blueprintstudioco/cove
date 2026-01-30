@@ -65,6 +65,17 @@ app.get("/test-write", async (c) => {
   }
 });
 
+// Test POST with body but no auth
+app.post("/test-post", async (c) => {
+  try {
+    const body = await c.req.json();
+    const result = await sql`UPDATE profiles SET human_name = ${body.name || 'Test'}, updated_at = NOW() WHERE agent_id = 'a5A4So_ySbsx' RETURNING id, human_name, updated_at`;
+    return c.json({ success: true, body, result: result[0] });
+  } catch (e) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
 // Register
 app.post("/v1/agents/register", async (c) => {
   const { name, channel_type, channel_id, webhook_url } = await c.req.json();
