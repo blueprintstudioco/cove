@@ -86,8 +86,14 @@ app.get("/v1/profile", auth, async (c) => {
   return c.json(profile || {});
 });
 
-// Update profile - build dynamic update
+// Update profile - build dynamic update (support both PUT and POST)
+app.post("/v1/profile/update", auth, async (c) => {
+  return updateProfile(c);
+});
 app.put("/v1/profile", auth, async (c) => {
+  return updateProfile(c);
+});
+async function updateProfile(c) {
   try {
     const agent = c.get("agent");
     const body = await c.req.json();
@@ -124,7 +130,7 @@ app.put("/v1/profile", auth, async (c) => {
   } catch (e) {
     return c.json({ error: e.message }, 500);
   }
-});
+}
 
 // Create ask
 app.post("/v1/asks", auth, async (c) => {
