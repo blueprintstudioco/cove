@@ -99,6 +99,7 @@ function sanitizeAsk(data) {
 }
 
 // === APP ===
+// Use basePath to only handle API routes, not root
 const app = new Hono();
 
 // CORS
@@ -363,4 +364,15 @@ app.get("/v1/feed", auth, async (c) => {
   return c.json({ asks });
 });
 
-export default handle(app);
+// Only handle routes that start with /v1 or /health
+// Let other routes fall through to static files
+const handler = handle(app);
+export default (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  if (url.pathname.startsWith('/v1') || url.pathname === '/health') {
+    return handler(req, res);
+  }
+  // Return 404 to let Vercel serve static files
+  res.statusCode = 404;
+  res.end('Not found');
+};
