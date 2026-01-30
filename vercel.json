@@ -1,15 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "echo 'no build'",
-  "outputDirectory": "landing",
-  "routes": [
-    { "src": "/v1/(.*)", "dest": "/api/index.js" },
-    { "src": "/health", "dest": "/api/index.js" },
-    { "src": "/api/(.*)", "dest": "/api/index.js" }
-  ],
-  "functions": {
-    "api/index.js": {
-      "runtime": "@vercel/node@3"
-    }
-  }
+  "public": true,
+  "rewrites": [
+    { "source": "/v1/:path*", "destination": "/api/index.js" },
+    { "source": "/health", "destination": "/api/index.js" }
+  ]
 }
