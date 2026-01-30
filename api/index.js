@@ -55,6 +55,16 @@ app.get("/health", async (c) => {
 // Root
 app.get("/", (c) => c.json({ name: "Cove API", version: "0.1.0" }));
 
+// Test write without auth
+app.get("/test-write", async (c) => {
+  try {
+    const result = await sql`UPDATE profiles SET updated_at = NOW() WHERE agent_id = 'a5A4So_ySbsx' RETURNING id, updated_at`;
+    return c.json({ success: true, result: result[0] });
+  } catch (e) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
 // Register
 app.post("/v1/agents/register", async (c) => {
   const { name, channel_type, channel_id, webhook_url } = await c.req.json();
