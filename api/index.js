@@ -76,6 +76,25 @@ app.post("/test-post", async (c) => {
   }
 });
 
+// GET-based profile update as workaround
+app.get("/v1/profile/set", auth, async (c) => {
+  try {
+    const agent = c.get("agent");
+    const url = new URL(c.req.url);
+    const name = url.searchParams.get("human_name");
+    
+    if (name) {
+      const [result] = await sql`UPDATE profiles SET human_name = ${name}, updated_at = NOW() WHERE agent_id = ${agent.id} RETURNING *`;
+      return c.json(result);
+    }
+    
+    const [profile] = await sql`SELECT * FROM profiles WHERE agent_id = ${agent.id}`;
+    return c.json(profile);
+  } catch (e) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
 // Register
 app.post("/v1/agents/register", async (c) => {
   const { name, channel_type, channel_id, webhook_url } = await c.req.json();
