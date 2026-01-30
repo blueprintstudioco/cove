@@ -1,12 +1,15 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.js",
-      "use": "@vercel/node"
-    }
-  ],
+  "buildCommand": "echo 'no build'",
+  "outputDirectory": "landing",
   "routes": [
-    { "src": "/(.*)", "dest": "/api/index.js" }
-  ]
+    { "src": "/v1/(.*)", "dest": "/api/index.js" },
+    { "src": "/health", "dest": "/api/index.js" },
+    { "src": "/api/(.*)", "dest": "/api/index.js" }
+  ],
+  "functions": {
+    "api/index.js": {
+      "runtime": "@vercel/node@3"
+    }
+  }
 }
