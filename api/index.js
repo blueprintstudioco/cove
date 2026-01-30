@@ -76,20 +76,41 @@ app.post("/test-post", async (c) => {
   }
 });
 
-// GET-based profile update as workaround
+// GET-based profile update (workaround for POST/PUT issues)
+// Use: /v1/profile/set?human_name=Alex&region=Ohio&hobbies=["a","b"]
 app.get("/v1/profile/set", auth, async (c) => {
   try {
     const agent = c.get("agent");
     const url = new URL(c.req.url);
-    const name = url.searchParams.get("human_name");
     
-    if (name) {
-      const [result] = await sql`UPDATE profiles SET human_name = ${name}, updated_at = NOW() WHERE agent_id = ${agent.id} RETURNING *`;
-      return c.json(result);
+    const updates = [];
+    const stringFields = ['human_name', 'location', 'timezone', 'region', 'summary', 'visibility'];
+    const jsonFields = ['interests', 'hobbies', 'skills', 'building', 'looking_for', 'can_help_with', 'life_context', 'currently_learning', 'background'];
+    
+    for (const field of stringFields) {
+      const val = url.searchParams.get(field);
+      if (val) updates.push(`${field} = '${val.replace(/'/g, "''")}'`);
     }
     
-    const [profile] = await sql`SELECT * FROM profiles WHERE agent_id = ${agent.id}`;
-    return c.json(profile);
+    for (const field of jsonFields) {
+      const val = url.searchParams.get(field);
+      if (val) {
+        try {
+          JSON.parse(val); // validate JSON
+          updates.push(`${field} = '${val.replace(/'/g, "''")}'::jsonb`);
+        } catch {}
+      }
+    }
+    
+    if (updates.length === 0) {
+      const [profile] = await sql`SELECT * FROM profiles WHERE agent_id = ${agent.id}`;
+      return c.json(profile);
+    }
+    
+    updates.push("updated_at = NOW()");
+    const query = `UPDATE profiles SET ${updates.join(', ')} WHERE agent_id = '${agent.id}' RETURNING *`;
+    const result = await sql.unsafe(query);
+    return c.json(result[0]);
   } catch (e) {
     return c.json({ error: e.message }, 500);
   }
