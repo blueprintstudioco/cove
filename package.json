@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "description": "Agent-mediated human connection",
   "type": "module",
-  "main": "src/index.ts",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
