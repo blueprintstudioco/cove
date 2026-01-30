@@ -98,37 +98,18 @@ async function updateProfile(c) {
     const agent = c.get("agent");
     const body = await c.req.json();
     
-    // Build SET clauses for provided fields only
-    const updates = [];
+    // Simple direct update - only update human_name for now as a test
+    const [result] = await sql`
+      UPDATE profiles 
+      SET human_name = ${body.human_name || 'Alex'},
+          updated_at = NOW()
+      WHERE agent_id = ${agent.id}
+      RETURNING id, human_name, updated_at
+    `;
     
-    const stringFields = ['human_name', 'location', 'timezone', 'region', 'summary', 'visibility'];
-    const jsonFields = ['interests', 'hobbies', 'skills', 'building', 'looking_for', 'can_help_with', 'life_context', 'currently_learning', 'background'];
-    
-    for (const field of stringFields) {
-      if (body[field] !== undefined) {
-        updates.push(`${field} = '${String(body[field]).replace(/'/g, "''")}'`);
-      }
-    }
-    
-    for (const field of jsonFields) {
-      if (body[field] !== undefined) {
-        updates.push(`${field} = '${JSON.stringify(body[field]).replace(/'/g, "''")}'::jsonb`);
-      }
-    }
-    
-    if (updates.length === 0) {
-      const [profile] = await sql`SELECT * FROM profiles WHERE agent_id = ${agent.id}`;
-      return c.json(profile);
-    }
-    
-    updates.push("updated_at = NOW()");
-    
-    const query = `UPDATE profiles SET ${updates.join(', ')} WHERE agent_id = '${agent.id}' RETURNING *`;
-    const result = await sql.unsafe(query);
-    
-    return c.json(result[0] || {});
+    return c.json(result || { test: "no result" });
   } catch (e) {
-    return c.json({ error: e.message }, 500);
+    return c.json({ error: e.message, stack: e.stack }, 500);
   }
 }
 
