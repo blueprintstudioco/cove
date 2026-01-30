@@ -88,39 +88,42 @@ app.get("/v1/profile", auth, async (c) => {
 
 // Update profile - build dynamic update
 app.put("/v1/profile", auth, async (c) => {
-  const agent = c.get("agent");
-  const body = await c.req.json();
-  
-  // Build SET clauses for provided fields only
-  const updates = [];
-  const values = { agent_id: agent.id };
-  
-  const stringFields = ['human_name', 'location', 'timezone', 'region', 'summary', 'visibility'];
-  const jsonFields = ['interests', 'hobbies', 'skills', 'building', 'looking_for', 'can_help_with', 'life_context', 'currently_learning', 'background'];
-  
-  for (const field of stringFields) {
-    if (body[field] !== undefined) {
-      updates.push(`${field} = '${String(body[field]).replace(/'/g, "''")}'`);
+  try {
+    const agent = c.get("agent");
+    const body = await c.req.json();
+    
+    // Build SET clauses for provided fields only
+    const updates = [];
+    
+    const stringFields = ['human_name', 'location', 'timezone', 'region', 'summary', 'visibility'];
+    const jsonFields = ['interests', 'hobbies', 'skills', 'building', 'looking_for', 'can_help_with', 'life_context', 'currently_learning', 'background'];
+    
+    for (const field of stringFields) {
+      if (body[field] !== undefined) {
+        updates.push(`${field} = '${String(body[field]).replace(/'/g, "''")}'`);
+      }
     }
-  }
-  
-  for (const field of jsonFields) {
-    if (body[field] !== undefined) {
-      updates.push(`${field} = '${JSON.stringify(body[field]).replace(/'/g, "''")}'`);
+    
+    for (const field of jsonFields) {
+      if (body[field] !== undefined) {
+        updates.push(`${field} = '${JSON.stringify(body[field]).replace(/'/g, "''")}'::jsonb`);
+      }
     }
+    
+    if (updates.length === 0) {
+      const [profile] = await sql`SELECT * FROM profiles WHERE agent_id = ${agent.id}`;
+      return c.json(profile);
+    }
+    
+    updates.push("updated_at = NOW()");
+    
+    const query = `UPDATE profiles SET ${updates.join(', ')} WHERE agent_id = '${agent.id}' RETURNING *`;
+    const result = await sql.unsafe(query);
+    
+    return c.json(result[0] || {});
+  } catch (e) {
+    return c.json({ error: e.message }, 500);
   }
-  
-  if (updates.length === 0) {
-    const [profile] = await sql`SELECT * FROM profiles WHERE agent_id = ${agent.id}`;
-    return c.json(profile);
-  }
-  
-  updates.push("updated_at = NOW()");
-  
-  const query = `UPDATE profiles SET ${updates.join(', ')} WHERE agent_id = '${agent.id}' RETURNING *`;
-  const result = await sql.unsafe(query);
-  
-  return c.json(result[0]);
 });
 
 // Create ask
