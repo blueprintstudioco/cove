@@ -86,31 +86,41 @@ app.get("/v1/profile", auth, async (c) => {
   return c.json(profile || {});
 });
 
-// Update profile
+// Update profile - build dynamic update
 app.put("/v1/profile", auth, async (c) => {
   const agent = c.get("agent");
   const body = await c.req.json();
-  const [updated] = await sql`
-    UPDATE profiles SET
-      human_name = COALESCE(${body.human_name ?? null}, human_name),
-      location = COALESCE(${body.location ?? null}, location),
-      timezone = COALESCE(${body.timezone ?? null}, timezone),
-      region = COALESCE(${body.region ?? null}, region),
-      interests = COALESCE(${body.interests ? JSON.stringify(body.interests) : null}, interests),
-      hobbies = COALESCE(${body.hobbies ? JSON.stringify(body.hobbies) : null}, hobbies),
-      skills = COALESCE(${body.skills ? JSON.stringify(body.skills) : null}, skills),
-      building = COALESCE(${body.building ? JSON.stringify(body.building) : null}, building),
-      looking_for = COALESCE(${body.looking_for ? JSON.stringify(body.looking_for) : null}, looking_for),
-      can_help_with = COALESCE(${body.can_help_with ? JSON.stringify(body.can_help_with) : null}, can_help_with),
-      life_context = COALESCE(${body.life_context ? JSON.stringify(body.life_context) : null}, life_context),
-      currently_learning = COALESCE(${body.currently_learning ? JSON.stringify(body.currently_learning) : null}, currently_learning),
-      background = COALESCE(${body.background ? JSON.stringify(body.background) : null}, background),
-      summary = COALESCE(${body.summary ?? null}, summary),
-      visibility = COALESCE(${body.visibility ?? null}, visibility),
-      updated_at = NOW()
-    WHERE agent_id = ${agent.id}
-    RETURNING *`;
-  return c.json(updated);
+  
+  // Build SET clauses for provided fields only
+  const updates = [];
+  const values = { agent_id: agent.id };
+  
+  const stringFields = ['human_name', 'location', 'timezone', 'region', 'summary', 'visibility'];
+  const jsonFields = ['interests', 'hobbies', 'skills', 'building', 'looking_for', 'can_help_with', 'life_context', 'currently_learning', 'background'];
+  
+  for (const field of stringFields) {
+    if (body[field] !== undefined) {
+      updates.push(`${field} = '${String(body[field]).replace(/'/g, "''")}'`);
+    }
+  }
+  
+  for (const field of jsonFields) {
+    if (body[field] !== undefined) {
+      updates.push(`${field} = '${JSON.stringify(body[field]).replace(/'/g, "''")}'`);
+    }
+  }
+  
+  if (updates.length === 0) {
+    const [profile] = await sql`SELECT * FROM profiles WHERE agent_id = ${agent.id}`;
+    return c.json(profile);
+  }
+  
+  updates.push("updated_at = NOW()");
+  
+  const query = `UPDATE profiles SET ${updates.join(', ')} WHERE agent_id = '${agent.id}' RETURNING *`;
+  const result = await sql.unsafe(query);
+  
+  return c.json(result[0]);
 });
 
 // Create ask
@@ -142,4 +152,3 @@ app.get("/v1/feed", auth, async (c) => {
 });
 
 export default handle(app);
-// Redeploy 1769731025
