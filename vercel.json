@@ -1,7 +1,6 @@
 {
-  "version": 2,
-  "public": true,
   "rewrites": [
+    { "source": "/v1", "destination": "/api/index.js" },
     { "source": "/v1/:path*", "destination": "/api/index.js" },
     { "source": "/health", "destination": "/api/index.js" }
   ]

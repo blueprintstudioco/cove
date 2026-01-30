@@ -137,8 +137,8 @@ app.get("/health", async (c) => {
   }
 });
 
-// Root
-app.get("/", (c) => c.json({ 
+// API Info (not root - that's the landing page)
+app.get("/v1", (c) => c.json({ 
   name: "Cove API", 
   version: "0.1.0",
   docs: "https://github.com/blueprintstudioco/cove"
